@@ -1,0 +1,252 @@
+/**
+ * Form Settings Admin Styles
+ */
+
+.form-settings-wrap {
+    margin-top: 20px;
+}
+
+.nav-tab-wrapper {
+    margin-bottom: 20px;
+}
+
+.tab-content {
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccd0d4;
+    border-top: none;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.fs-tab-content h2 {
+    margin-top: 0;
+}
+
+/* Messages */
+.fs-message {
+    margin: 15px 0;
+    padding: 10px 15px;
+    border-left: 4px solid #00a0d2;
+    background: #f0f6fc;
+    display: none;
+}
+
+.fs-message.success {
+    border-left-color: #46b450;
+    background: #ecf7ed;
+}
+
+.fs-message.error {
+    border-left-color: #dc3232;
+    background: #fef7f7;
+}
+
+.fs-message.show {
+    display: block;
+}
+
+/* Recipients Tab */
+.fs-add-recipient {
+    margin: 20px 0;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.fs-add-recipient input[type="email"] {
+    flex: 1;
+    max-width: 400px;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.fs-recipients-list {
+    margin-top: 30px;
+}
+
+.fs-recipients-list h3 {
+    margin-bottom: 15px;
+}
+
+#fs-recipients-container {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.fs-recipient-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    margin-bottom: 8px;
+    border-radius: 3px;
+}
+
+.fs-recipient-email {
+    font-weight: 500;
+    color: #333;
+}
+
+.fs-no-recipients {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    background: #f9f9f9;
+    border: 1px dashed #ddd;
+    border-radius: 3px;
+}
+
+/* Validation Tab */
+.fs-validation-fields-container {
+    margin-top: 20px;
+}
+
+.fs-validation-fields-container table {
+    margin-top: 20px;
+}
+
+/* Toggle Switch */
+.fs-toggle {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.fs-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.fs-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.fs-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+.fs-toggle input:checked + .fs-toggle-slider {
+    background-color: #2271b1;
+}
+
+.fs-toggle input:checked + .fs-toggle-slider:before {
+    transform: translateX(26px);
+}
+
+/* Scanner Tab */
+.fs-scan-results {
+    margin-top: 20px;
+}
+
+.fs-scan-stats {
+    background: #f0f6fc;
+    padding: 15px;
+    border-left: 4px solid #2271b1;
+    margin-bottom: 20px;
+}
+
+.fs-scan-stats p {
+    margin: 5px 0;
+}
+
+.fs-field-forms {
+    font-size: 12px;
+    color: #666;
+}
+
+.fs-field-forms span {
+    display: inline-block;
+    background: #f0f0f0;
+    padding: 2px 8px;
+    margin: 2px;
+    border-radius: 3px;
+}
+
+/* Templates Tab */
+.fs-template-editor {
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #ddd;
+}
+
+.fs-templates-list {
+    margin-top: 30px;
+}
+
+.fs-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    font-size: 12px;
+    border-radius: 3px;
+    background: #f0f0f0;
+    color: #666;
+}
+
+.fs-badge-active {
+    background: #46b450;
+    color: #fff;
+}
+
+/* Loading State */
+.fs-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.fs-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #2271b1;
+    border-radius: 50%;
+    animation: fs-spin 1s linear infinite;
+}
+
+@keyframes fs-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .fs-add-recipient {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .fs-add-recipient input[type="email"] {
+        max-width: 100%;
+    }
+    
+    .fs-recipient-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}

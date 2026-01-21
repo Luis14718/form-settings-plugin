@@ -1,0 +1,41 @@
+# Ignore Mac system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Ignore thumbnails
+._*
+
+# Ignore files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore node modules (if any)
+node_modules/
+
+# Ignore logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore temporary files
+*.tmp
+*.temp
+*~
+
+# Ignore OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
