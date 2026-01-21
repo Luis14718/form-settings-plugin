@@ -182,7 +182,8 @@ class Form_Settings_Email_Template_Manager
      */
     public function get_available_mail_tags()
     {
-        return array(
+        // Static mail tags
+        $static_tags = array(
             '[your-name]' => 'Sender name',
             '[your-email]' => 'Sender email',
             '[your-subject]' => 'Email subject',
@@ -194,5 +195,64 @@ class Form_Settings_Email_Template_Manager
             '[_date]' => 'Submission date',
             '[_time]' => 'Submission time'
         );
+
+        // Get dynamic form fields from all CF7 forms
+        $dynamic_tags = $this->get_all_form_fields();
+
+        // Merge and return
+        return array_merge($static_tags, $dynamic_tags);
+    }
+
+    /**
+     * Get all form fields from all Contact Form 7 forms
+     * 
+     * @return array Array of field tags and descriptions
+     */
+    private function get_all_form_fields()
+    {
+        $fields = array();
+
+        if (!function_exists('wpcf7_contact_form')) {
+            return $fields;
+        }
+
+        // Get all CF7 forms
+        $forms = get_posts(array(
+            'post_type' => 'wpcf7_contact_form',
+            'posts_per_page' => -1,
+            'orderby' => 'title',
+            'order' => 'ASC'
+        ));
+
+        foreach ($forms as $form_post) {
+            $form = wpcf7_contact_form($form_post->ID);
+            if (!$form) {
+                continue;
+            }
+
+            $form_title = $form->title();
+            $form_tags = $form->scan_form_tags();
+
+            foreach ($form_tags as $tag) {
+                // Get the field name
+                $field_name = isset($tag['name']) ? $tag['name'] : '';
+                if (empty($field_name)) {
+                    continue;
+                }
+
+                // Create the mail tag format
+                $mail_tag = '[' . $field_name . ']';
+
+                // Get field type for description
+                $field_type = isset($tag['basetype']) ? $tag['basetype'] : $tag['type'];
+
+                // Add to fields array if not already present
+                if (!isset($fields[$mail_tag])) {
+                    $fields[$mail_tag] = ucfirst($field_type) . ' field from "' . $form_title . '"';
+                }
+            }
+        }
+
+        return $fields;
     }
 }
