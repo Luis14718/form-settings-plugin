@@ -1,16 +1,17 @@
 <?php
 /**
  * Plugin Name: Form Settings
- * Plugin URI: https://bsd.com
+ * Plugin URI: https://github.com/Luis14718/form-settings-plugin
  * Description: Centralized management for Contact Form 7 forms including global recipients, validation rules, form field scanning, and email templates.
  * Version: 1.0.0
- * Author: BSD
- * Author URI: https://bsd.com
+ * Author: Luis Rodriguez
+ * Author URI: https://github.com/Luis14718
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: form-settings
  * Requires at least: 5.0
  * Requires PHP: 7.2
+ * GitHub Plugin URI: Luis14718/form-settings-plugin
  */
 
 // If this file is called directly, abort.
@@ -114,6 +115,17 @@ function form_settings_init()
 
     if (class_exists('Form_Settings_Error_Logger')) {
         new Form_Settings_Error_Logger();
+    }
+
+    // Initialize plugin updater for automatic updates from GitHub
+    require_once FORM_SETTINGS_PLUGIN_DIR . 'includes/class-plugin-updater.php';
+    if (class_exists('Form_Settings_Plugin_Updater')) {
+        new Form_Settings_Plugin_Updater(
+            FORM_SETTINGS_PLUGIN_BASENAME,
+            'Luis14718',  // GitHub username
+            'form-settings-plugin',  // GitHub repository name
+            FORM_SETTINGS_VERSION
+        );
     }
 
     // Initialize admin interface
