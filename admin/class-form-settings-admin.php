@@ -27,9 +27,6 @@ class Form_Settings_Admin
         add_action('wp_ajax_fs_remove_form_recipient', array($this, 'ajax_remove_form_recipient'));
         add_action('wp_ajax_fs_scan_forms', array($this, 'ajax_scan_forms'));
         add_action('wp_ajax_fs_save_validation_rules', array($this, 'ajax_save_validation_rules'));
-        add_action('wp_ajax_fs_save_email_template', array($this, 'ajax_save_email_template'));
-        add_action('wp_ajax_fs_delete_email_template', array($this, 'ajax_delete_email_template'));
-        add_action('wp_ajax_fs_set_active_template', array($this, 'ajax_set_active_template'));
         add_action('wp_ajax_fs_save_settings', array($this, 'ajax_save_settings'));
     }
 
@@ -119,10 +116,7 @@ class Form_Settings_Admin
                     class="nav-tab <?php echo $active_tab === 'scanner' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Form Scanner', 'form-settings'); ?>
                 </a>
-                <a href="?page=form-settings&tab=templates"
-                    class="nav-tab <?php echo $active_tab === 'templates' ? 'nav-tab-active' : ''; ?>">
-                    <?php _e('Email Templates', 'form-settings'); ?>
-                </a>
+
                 <a href="?page=form-settings&tab=settings"
                     class="nav-tab <?php echo $active_tab === 'settings' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Settings', 'form-settings'); ?>
@@ -141,9 +135,7 @@ class Form_Settings_Admin
                     case 'scanner':
                         $this->render_scanner_tab();
                         break;
-                    case 'templates':
-                        $this->render_templates_tab();
-                        break;
+
                     case 'settings':
                         $this->render_settings_tab();
                         break;
@@ -338,156 +330,6 @@ class Form_Settings_Admin
     /**
      * Render Templates tab
      */
-    private function render_templates_tab()
-    {
-        $template_manager = new Form_Settings_Email_Template_Manager();
-        $templates = $template_manager->get_templates();
-        $active_template = $template_manager->get_active_template();
-        $mail_tags = $template_manager->get_available_mail_tags();
-        ?>
-        <div class="fs-tab-content">
-            <h2>
-                <?php _e('Email Templates', 'form-settings'); ?>
-            </h2>
-            <p>
-                <?php _e('Create email templates that will be applied to all Contact Form 7 forms.', 'form-settings'); ?>
-            </p>
-
-            <div id="fs-template-message" class="fs-message"></div>
-
-            <div class="fs-template-editor">
-                <h3>
-                    <?php _e('Create/Edit Template', 'form-settings'); ?>
-                </h3>
-                <form id="fs-template-form">
-                    <input type="hidden" id="fs-template-id" name="template_id" value="" />
-
-                    <table class="form-table">
-                        <tr>
-                            <th><label for="fs-template-name">
-                                    <?php _e('Template Name', 'form-settings'); ?>
-                                </label></th>
-                            <td><input type="text" id="fs-template-name" name="template_name" class="regular-text" required />
-                            </td>
-                        </tr>
-                        <tr>
-                            <th><label for="fs-template-subject">
-                                    <?php _e('Email Subject', 'form-settings'); ?>
-                                </label></th>
-                            <td><input type="text" id="fs-template-subject" name="template_subject" class="large-text" /></td>
-                        </tr>
-                        <tr>
-                            <th><label for="fs-template-body">
-                                    <?php _e('Email Body', 'form-settings'); ?>
-                                </label></th>
-                            <td>
-                                <textarea id="fs-template-body" name="template_body" rows="10" class="large-text"></textarea>
-                                <p class="description">
-                                    <?php _e('Available mail tags:', 'form-settings'); ?>
-                                    <?php foreach ($mail_tags as $tag => $description): ?>
-                                        <code><?php echo esc_html($tag); ?></code>
-                                    <?php endforeach; ?>
-                                </p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th><label for="fs-template-active">
-                                    <?php _e('Set as Active', 'form-settings'); ?>
-                                </label></th>
-                            <td>
-                                <label class="fs-toggle">
-                                    <input type="checkbox" id="fs-template-active" name="template_active" value="1" />
-                                    <span class="fs-toggle-slider"></span>
-                                </label>
-                            </td>
-                        </tr>
-                    </table>
-
-                    <p class="submit">
-                        <button type="submit" class="button button-primary">
-                            <?php _e('Save Template', 'form-settings'); ?>
-                        </button>
-                        <button type="button" class="button" id="fs-reset-template-form">
-                            <?php _e('Reset Form', 'form-settings'); ?>
-                        </button>
-                    </p>
-                </form>
-            </div>
-
-            <div class="fs-templates-list">
-                <h3>
-                    <?php _e('Saved Templates', 'form-settings'); ?>
-                </h3>
-                <div id="fs-templates-container">
-                    <?php if (empty($templates)): ?>
-                        <p>
-                            <?php _e('No templates created yet.', 'form-settings'); ?>
-                        </p>
-                    <?php else: ?>
-                        <table class="wp-list-table widefat fixed striped">
-                            <thead>
-                                <tr>
-                                    <th>
-                                        <?php _e('Template Name', 'form-settings'); ?>
-                                    </th>
-                                    <th>
-                                        <?php _e('Status', 'form-settings'); ?>
-                                    </th>
-                                    <th>
-                                        <?php _e('Modified', 'form-settings'); ?>
-                                    </th>
-                                    <th>
-                                        <?php _e('Actions', 'form-settings'); ?>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($templates as $template): ?>
-                                    <tr>
-                                        <td><strong>
-                                                <?php echo esc_html($template['name']); ?>
-                                            </strong></td>
-                                        <td>
-                                            <?php if (isset($template['active']) && $template['active']): ?>
-                                                <span class="fs-badge fs-badge-active">
-                                                    <?php _e('Active', 'form-settings'); ?>
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="fs-badge">
-                                                    <?php _e('Inactive', 'form-settings'); ?>
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php echo esc_html(isset($template['modified']) ? $template['modified'] : '-'); ?>
-                                        </td>
-                                        <td>
-                                            <button type="button" class="button button-small fs-edit-template"
-                                                data-template='<?php echo esc_attr(json_encode($template)); ?>'>
-                                                <?php _e('Edit', 'form-settings'); ?>
-                                            </button>
-                                            <?php if (!isset($template['active']) || !$template['active']): ?>
-                                                <button type="button" class="button button-small fs-activate-template"
-                                                    data-id="<?php echo esc_attr($template['id']); ?>">
-                                                    <?php _e('Activate', 'form-settings'); ?>
-                                                </button>
-                                            <?php endif; ?>
-                                            <button type="button" class="button button-small fs-delete-template"
-                                                data-id="<?php echo esc_attr($template['id']); ?>">
-                                                <?php _e('Delete', 'form-settings'); ?>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-        <?php
-    }
-
     /**
      * Render Settings tab
      */
@@ -535,7 +377,7 @@ class Form_Settings_Admin
                 </p>
             </form>
         </div>
-                <?php
+        <?php
     }
 
     /**
