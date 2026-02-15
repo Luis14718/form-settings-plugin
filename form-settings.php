@@ -3,8 +3,8 @@
  * Plugin Name: Form Settings
  * Plugin URI: https://github.com/Luis14718/form-settings-plugin
  * Description: Centralized management for Contact Form 7 forms including global recipients, validation rules, form field scanning, and email templates.
- * Version: 1.0.0
- * Author: Luis Rodriguez
+ * Version: 1.0.1
+ * Author: BSD
  * Author URI: https://github.com/Luis14718
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -20,7 +20,7 @@ if (!defined('WPINC')) {
 }
 
 // Define plugin constants
-define('FORM_SETTINGS_VERSION', '1.0.0');
+define('FORM_SETTINGS_VERSION', '1.0.1');
 define('FORM_SETTINGS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('FORM_SETTINGS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('FORM_SETTINGS_PLUGIN_BASENAME', plugin_basename(__FILE__));
@@ -109,9 +109,10 @@ function form_settings_init()
         new Form_Settings_Validation_Manager();
     }
 
-    if (class_exists('Form_Settings_Email_Template_Manager')) {
-        new Form_Settings_Email_Template_Manager();
-    }
+    // Email Template Manager disabled - feature removed
+    // if (class_exists('Form_Settings_Email_Template_Manager')) {
+    //     new Form_Settings_Email_Template_Manager();
+    // }
 
     if (class_exists('Form_Settings_Error_Logger')) {
         new Form_Settings_Error_Logger();

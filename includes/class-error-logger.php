@@ -32,16 +32,37 @@ class Form_Settings_Error_Logger
      */
     public function log_submission_error($contact_form, $result)
     {
-        // Only log if there was an error (not success)
-        if ($result['status'] === 'validation_failed' || $result['status'] === 'acceptance_missing' || $result['status'] === 'invalid') {
-            $this->log_error(array(
-                'type' => 'validation',
-                'form_id' => $contact_form->id(),
-                'form_title' => $contact_form->title(),
-                'message' => isset($result['message']) ? $result['message'] : 'Form validation failed',
-                'details' => $this->get_validation_details($contact_form, $result)
-            ));
+        // Start output buffering to prevent any output from corrupting CF7's AJAX response
+        ob_start();
+
+        try {
+            // Ensure result is an array and has a status key
+            if (!is_array($result) || !isset($result['status'])) {
+                ob_end_clean();
+                return;
+            }
+
+            // Only log if there was an error (not success)
+            $error_statuses = array('validation_failed', 'acceptance_missing', 'invalid');
+            if (in_array($result['status'], $error_statuses, true)) {
+                $this->log_error(array(
+                    'type' => 'validation',
+                    'form_id' => $contact_form->id(),
+                    'form_title' => $contact_form->title(),
+                    'message' => isset($result['message']) ? $result['message'] : 'Form validation failed',
+                    'details' => $this->get_validation_details($contact_form, $result)
+                ));
+            }
+        } catch (Exception $e) {
+            // Silently fail to prevent blocking form submission
+            error_log('Form Settings Error Logger: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            // Catch any PHP 7+ errors as well
+            error_log('Form Settings Error Logger (Fatal): ' . $e->getMessage());
         }
+
+        // Clean output buffer and discard any output
+        ob_end_clean();
     }
 
 
@@ -52,13 +73,27 @@ class Form_Settings_Error_Logger
      */
     public function log_spam_error($contact_form)
     {
-        $this->log_error(array(
-            'type' => 'spam',
-            'form_id' => $contact_form->id(),
-            'form_title' => $contact_form->title(),
-            'message' => 'Form submission marked as spam',
-            'details' => $this->get_submission_data()
-        ));
+        // Start output buffering to prevent any output from corrupting CF7's AJAX response
+        ob_start();
+
+        try {
+            $this->log_error(array(
+                'type' => 'spam',
+                'form_id' => $contact_form->id(),
+                'form_title' => $contact_form->title(),
+                'message' => 'Form submission marked as spam',
+                'details' => $this->get_submission_data()
+            ));
+        } catch (Exception $e) {
+            // Silently fail to prevent blocking form submission
+            error_log('Form Settings Error Logger: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            // Catch any PHP 7+ errors as well
+            error_log('Form Settings Error Logger (Fatal): ' . $e->getMessage());
+        }
+
+        // Clean output buffer and discard any output
+        ob_end_clean();
     }
 
     /**
@@ -68,13 +103,27 @@ class Form_Settings_Error_Logger
      */
     public function log_mail_error($contact_form)
     {
-        $this->log_error(array(
-            'type' => 'mail',
-            'form_id' => $contact_form->id(),
-            'form_title' => $contact_form->title(),
-            'message' => 'Failed to send email',
-            'details' => $this->get_submission_data()
-        ));
+        // Start output buffering to prevent any output from corrupting CF7's AJAX response
+        ob_start();
+
+        try {
+            $this->log_error(array(
+                'type' => 'mail',
+                'form_id' => $contact_form->id(),
+                'form_title' => $contact_form->title(),
+                'message' => 'Failed to send email',
+                'details' => $this->get_submission_data()
+            ));
+        } catch (Exception $e) {
+            // Silently fail to prevent blocking form submission
+            error_log('Form Settings Error Logger: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            // Catch any PHP 7+ errors as well
+            error_log('Form Settings Error Logger (Fatal): ' . $e->getMessage());
+        }
+
+        // Clean output buffer and discard any output
+        ob_end_clean();
     }
 
 
@@ -154,6 +203,10 @@ class Form_Settings_Error_Logger
      */
     private function get_submission_data()
     {
+        if (!class_exists('WPCF7_Submission')) {
+            return array();
+        }
+
         $submission = WPCF7_Submission::get_instance();
 
         if (!$submission) {
@@ -161,6 +214,10 @@ class Form_Settings_Error_Logger
         }
 
         $posted_data = $submission->get_posted_data();
+
+        if (!is_array($posted_data)) {
+            return array();
+        }
 
         // Remove sensitive data
         $safe_data = array();

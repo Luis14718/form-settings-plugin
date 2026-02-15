@@ -92,7 +92,7 @@ class Form_Settings_Plugin_Updater
 
         $release = $this->get_github_release_info();
 
-        if ($release === false) {
+        if ($release === false || !isset($release['tag_name'])) {
             return $transient;
         }
 
@@ -104,8 +104,8 @@ class Form_Settings_Plugin_Updater
             $plugin_data = array(
                 'slug' => $this->plugin_slug,
                 'new_version' => $new_version,
-                'url' => $release['html_url'],
-                'package' => $release['zipball_url'],
+                'url' => isset($release['html_url']) ? $release['html_url'] : '',
+                'package' => isset($release['zipball_url']) ? $release['zipball_url'] : '',
                 'tested' => '6.4',
                 'requires_php' => '7.0',
             );
@@ -131,7 +131,7 @@ class Form_Settings_Plugin_Updater
 
         $release = $this->get_github_release_info();
 
-        if ($release === false) {
+        if ($release === false || !isset($release['tag_name'])) {
             return $false;
         }
 
@@ -142,14 +142,14 @@ class Form_Settings_Plugin_Updater
             'slug' => $this->plugin_slug,
             'version' => $new_version,
             'author' => '<a href="https://github.com/' . $this->github_username . '">Developer</a>',
-            'homepage' => $release['html_url'],
+            'homepage' => isset($release['html_url']) ? $release['html_url'] : '',
             'requires' => '5.0',
             'tested' => '6.4',
             'requires_php' => '7.0',
-            'download_link' => $release['zipball_url'],
+            'download_link' => isset($release['zipball_url']) ? $release['zipball_url'] : '',
             'sections' => array(
                 'description' => 'WordPress plugin for managing Contact Form 7 recipients, validation rules, email templates, and error logging.',
-                'changelog' => $this->parse_changelog($release['body']),
+                'changelog' => $this->parse_changelog(isset($release['body']) ? $release['body'] : ''),
             ),
         );
 
