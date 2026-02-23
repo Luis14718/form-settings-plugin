@@ -5,6 +5,17 @@ All notable changes to the Form Settings plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-02-22
+
+### Added
+- Frontend validation: submit button is disabled on page load when required fields (configured in the Validation tab) are present
+- Submit button enables only when all required fields are filled
+- Submit button returns to disabled state after a successful CF7 form reset
+
+### Changed
+- Refactored `class-frontend-scripts.php` to use `wp_localize_script` for passing required field data to JS
+- Combined copy-paste control and required-field logic into a single enqueue function
+
 ## [1.0.1] - 2026-02-15
 
 ### Fixed

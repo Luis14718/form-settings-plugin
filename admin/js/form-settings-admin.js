@@ -215,6 +215,8 @@
                 success: function (response) {
                     if (response.success) {
                         const fields = response.data.fields;
+                        // Load existing rules to pre-populate the form
+                        const existingRules = formSettingsAjax.validation_rules || {};
 
                         if (fields.length === 0) {
                             showMessage('#fs-validation-message', 'No form fields found. Please create some Contact Form 7 forms first.', 'error');
@@ -224,18 +226,25 @@
 
                         // Build validation form
                         let html = '<form id="fs-validation-form"><table class="wp-list-table widefat fixed striped"><thead><tr>';
-                        html += '<th>Field Name</th><th>Type</th><th>Required</th><th>Min Length</th><th>Max Length</th>';
+                        html += '<th>Field Name</th><th>Type</th><th>Display Name</th><th>Required</th><th>Min Length</th><th>Max Length</th>';
                         html += '</tr></thead><tbody>';
 
                         fields.forEach(function (field) {
+                            const existingRule = existingRules[field.name] || {};
+                            const displayName = existingRule.display_name || '';
+                            const isRequired = existingRule.required || false;
+                            const minLength = existingRule.min_length || '';
+                            const maxLength = existingRule.max_length || '';
+
                             html += '<tr>';
                             html += '<td><strong>' + field.name + '</strong></td>';
                             html += '<td>' + field.type + '</td>';
+                            html += '<td><input type="text" name="rules[' + field.name + '][display_name]" value="' + displayName + '" placeholder="e.g. Full Name" class="regular-text" /></td>';
                             html += '<td><label class="fs-toggle">';
-                            html += '<input type="checkbox" name="rules[' + field.name + '][required]" value="1" />';
+                            html += '<input type="checkbox" name="rules[' + field.name + '][required]" value="1"' + (isRequired ? ' checked' : '') + ' />';
                             html += '<span class="fs-toggle-slider"></span></label></td>';
-                            html += '<td><input type="number" name="rules[' + field.name + '][min_length]" value="" min="0" class="small-text" /></td>';
-                            html += '<td><input type="number" name="rules[' + field.name + '][max_length]" value="" min="0" class="small-text" /></td>';
+                            html += '<td><input type="number" name="rules[' + field.name + '][min_length]" value="' + minLength + '" min="0" class="small-text" /></td>';
+                            html += '<td><input type="number" name="rules[' + field.name + '][max_length]" value="' + maxLength + '" min="0" class="small-text" /></td>';
                             html += '</tr>';
                         });
 

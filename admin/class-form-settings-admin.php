@@ -85,7 +85,8 @@ class Form_Settings_Admin
             'formSettingsAjax',
             array(
                 'ajax_url' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('form_settings_nonce')
+                'nonce' => wp_create_nonce('form_settings_nonce'),
+                'validation_rules' => get_option('form_settings_validation_rules', array()),
             )
         );
     }
@@ -244,26 +245,22 @@ class Form_Settings_Admin
                             <table class="wp-list-table widefat fixed striped">
                                 <thead>
                                     <tr>
-                                        <th>
-                                            <?php _e('Field Name', 'form-settings'); ?>
-                                        </th>
-                                        <th>
-                                            <?php _e('Required', 'form-settings'); ?>
-                                        </th>
-                                        <th>
-                                            <?php _e('Min Length', 'form-settings'); ?>
-                                        </th>
-                                        <th>
-                                            <?php _e('Max Length', 'form-settings'); ?>
-                                        </th>
+                                        <th><?php _e('Field Name', 'form-settings'); ?></th>
+                                        <th><?php _e('Display Name', 'form-settings'); ?></th>
+                                        <th><?php _e('Required', 'form-settings'); ?></th>
+                                        <th><?php _e('Min Length', 'form-settings'); ?></th>
+                                        <th><?php _e('Max Length', 'form-settings'); ?></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach ($rules as $field_name => $rule): ?>
                                         <tr>
-                                            <td><strong>
-                                                    <?php echo esc_html($field_name); ?>
-                                                </strong></td>
+                                            <td><strong><?php echo esc_html($field_name); ?></strong></td>
+                                            <td>
+                                                <input type="text" name="rules[<?php echo esc_attr($field_name); ?>][display_name]"
+                                                    value="<?php echo isset($rule['display_name']) ? esc_attr($rule['display_name']) : ''; ?>"
+                                                    placeholder="e.g. Full Name" class="regular-text" />
+                                            </td>
                                             <td>
                                                 <label class="fs-toggle">
                                                     <input type="checkbox" name="rules[<?php echo esc_attr($field_name); ?>][required]"
@@ -472,8 +469,9 @@ class Form_Settings_Admin
         foreach ($rules as $field_name => $rule) {
             $sanitized_rules[sanitize_text_field($field_name)] = array(
                 'required' => isset($rule['required']) && $rule['required'] === '1',
+                'display_name' => isset($rule['display_name']) ? sanitize_text_field($rule['display_name']) : '',
                 'min_length' => isset($rule['min_length']) && !empty($rule['min_length']) ? absint($rule['min_length']) : null,
-                'max_length' => isset($rule['max_length']) && !empty($rule['max_length']) ? absint($rule['max_length']) : null
+                'max_length' => isset($rule['max_length']) && !empty($rule['max_length']) ? absint($rule['max_length']) : null,
             );
         }
 
