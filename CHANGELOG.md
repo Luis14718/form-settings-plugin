@@ -5,6 +5,18 @@ All notable changes to the Form Settings plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-02-23
+
+### Added
+- Frontend min/max length validation: submit button disabled when field length constraints are not met
+- Hover tooltip now shows specific messages for each violation (e.g. "Full Name must be at least 5 characters (currently 2)")
+- Min/max length rules passed to frontend via wp_localize_script unified rules array
+
+### Fixed
+- Error log was showing "unknown: Invalid" for validation errors instead of actual field names
+- CF7 `invalid_fields` CSS selector now parsed to extract the real field name
+- Replaced non-existent `get_invalid_fields()` on contact form object with `WPCF7_Submission::get_instance()->get_invalid_fields()`
+
 ## [1.0.2] - 2026-02-22
 
 ### Added

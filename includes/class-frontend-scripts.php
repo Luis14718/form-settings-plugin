@@ -13,36 +13,43 @@ function form_settings_enqueue_frontend_scripts()
     $options = get_option('form_settings_options', array());
     $disable_copy_paste = isset($options['disable_copy_paste']) && $options['disable_copy_paste'];
 
-    // Build required fields list with display names from validation rules
+    // Build validation rules for JS — required + min/max length
     $rules = get_option('form_settings_validation_rules', array());
-    $required_fields = array(); // [ { name, label } ]
+    $js_rules = array(); // fields that have at least one active rule
     if (is_array($rules)) {
         foreach ($rules as $field_name => $rule) {
-            if (!empty($rule['required'])) {
-                $required_fields[] = array(
+            $has_rule = !empty($rule['required'])
+                || (!empty($rule['min_length']) && $rule['min_length'] > 0)
+                || (!empty($rule['max_length']) && $rule['max_length'] > 0);
+
+            if ($has_rule) {
+                $js_rules[] = array(
                     'name' => $field_name,
                     'label' => !empty($rule['display_name']) ? $rule['display_name'] : $field_name,
+                    'required' => !empty($rule['required']),
+                    'min_length' => isset($rule['min_length']) && $rule['min_length'] > 0 ? (int) $rule['min_length'] : null,
+                    'max_length' => isset($rule['max_length']) && $rule['max_length'] > 0 ? (int) $rule['max_length'] : null,
                 );
             }
         }
     }
 
     // Only enqueue if there's something to do
-    if (!$disable_copy_paste && empty($required_fields)) {
+    if (!$disable_copy_paste && empty($js_rules)) {
         return;
     }
 
-    // Pass required fields (with labels) to JS
+    // Pass rules to JS
     wp_localize_script('jquery', 'formSettingsValidation', array(
-        'required_fields' => $required_fields,
+        'rules' => $js_rules,
     ));
 
     $inline_js = "jQuery(document).ready(function($) {\n";
 
-    // ── Required fields: disable submit until all filled + tooltip on click ───
-    if (!empty($required_fields)) {
+    // ── Required / length validation: disable submit + tooltip ────────────────
+    if (!empty($js_rules)) {
         $inline_js .= "
-        var fsRequired = formSettingsValidation.required_fields; // [{name, label}]
+        var fsRules = formSettingsValidation.rules; // [{name, label, required, min_length, max_length}]
 
         // ── Tooltip element (shared, appended once) ───────────────────────────
         var \$fsTooltip = $('<div id=\"fs-required-tooltip\"></div>').css({
@@ -55,7 +62,7 @@ function form_settings_enqueue_frontend_scripts()
             lineHeight: '1.5',
             zIndex: 99999,
             pointerEvents: 'none',
-            maxWidth: '260px',
+            maxWidth: '280px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
             display: 'none'
         }).appendTo('body');
@@ -64,39 +71,54 @@ function form_settings_enqueue_frontend_scripts()
         function fsSetupForm(\$form) {
             var \$submit = \$form.find('input[type=\"submit\"], button[type=\"submit\"]');
 
-            // Determine which required fields exist in this form
-            var formRequired = [];
-            for (var i = 0; i < fsRequired.length; i++) {
-                if (\$form.find('[name=\"' + fsRequired[i].name + '\"]').length) {
-                    formRequired.push(fsRequired[i]);
+            // Only include rules for fields that actually exist in this form
+            var formRules = [];
+            for (var i = 0; i < fsRules.length; i++) {
+                if (\$form.find('[name=\"' + fsRules[i].name + '\"]').length) {
+                    formRules.push(fsRules[i]);
                 }
             }
-            if (formRequired.length === 0) return;
+            if (formRules.length === 0) return;
 
-            function getMissing() {
-                var missing = [];
-                for (var i = 0; i < formRequired.length; i++) {
-                    var val = \$form.find('[name=\"' + formRequired[i].name + '\"]').val();
-                    if (!val || val.trim() === '') {
-                        missing.push(formRequired[i].label);
+            // Returns an array of error message strings, one per problem found
+            function getErrors() {
+                var errors = [];
+                for (var i = 0; i < formRules.length; i++) {
+                    var rule  = formRules[i];
+                    var \$field = \$form.find('[name=\"' + rule.name + '\"]');
+                    var val   = \$field.val() || '';
+                    var len   = val.trim().length;
+
+                    if (rule.required && len === 0) {
+                        errors.push(rule.label + ' is required');
+                        continue; // skip length checks if empty and required
+                    }
+
+                    if (len > 0 && rule.min_length !== null && len < rule.min_length) {
+                        errors.push(rule.label + ' must be at least ' + rule.min_length + ' characters (currently ' + len + ')');
+                    }
+
+                    if (len > 0 && rule.max_length !== null && len > rule.max_length) {
+                        errors.push(rule.label + ' must not exceed ' + rule.max_length + ' characters (currently ' + len + ')');
                     }
                 }
-                return missing;
+                return errors;
             }
 
             function checkForm() {
-                \$submit.prop('disabled', getMissing().length > 0);
-                // Sync cursor style on wrapper so it feels right
-                if (\$submit.prop('disabled')) {
+                var hasErrors = getErrors().length > 0;
+                \$submit.prop('disabled', hasErrors);
+                if (hasErrors) {
                     \$wrapper.css('cursor', 'not-allowed');
                     \$submit.css('pointerEvents', 'none');
                 } else {
                     \$wrapper.css('cursor', '');
                     \$submit.css('pointerEvents', '');
+                    \$fsTooltip.hide();
                 }
             }
 
-            // Wrap the submit button so we can receive hover events even when it's disabled
+            // Wrap submit button so hover works even when button is disabled
             \$submit.wrap('<span class=\"fs-submit-wrapper\" style=\"display:inline-block;\"></span>');
             var \$wrapper = \$submit.parent('.fs-submit-wrapper');
 
@@ -105,18 +127,18 @@ function form_settings_enqueue_frontend_scripts()
             \$wrapper.css('cursor', 'not-allowed');
             \$submit.css('pointerEvents', 'none');
 
-            // Re-check on input / change
+            // Re-check on every keystroke / change
             \$form.on('input change', function() { checkForm(); });
 
-            // Tooltip: listen on the WRAPPER (receives mouse events even when button is disabled)
+            // Tooltip: hover on the WRAPPER (fires even when button is disabled)
             \$wrapper.on('mouseenter', function() {
                 if (!\$submit.prop('disabled')) return;
-                var missing = getMissing();
-                if (missing.length === 0) return;
+                var errors = getErrors();
+                if (errors.length === 0) return;
 
-                var msg = 'Please fill in:<br>';
-                for (var i = 0; i < missing.length; i++) {
-                    msg += '&bull; ' + missing[i] + '<br>';
+                var msg = '';
+                for (var i = 0; i < errors.length; i++) {
+                    msg += '&bull; ' + errors[i] + '<br>';
                 }
 
                 \$fsTooltip.html(msg);

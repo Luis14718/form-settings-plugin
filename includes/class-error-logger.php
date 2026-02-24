@@ -168,23 +168,37 @@ class Form_Settings_Error_Logger
     {
         $invalid_fields = array();
 
-        // Get invalid fields from result if available
-        if ($result && isset($result['invalid_fields'])) {
-            foreach ($result['invalid_fields'] as $field) {
-                $invalid_fields[] = array(
-                    'field' => isset($field['into']) ? $field['into'] : 'unknown',
-                    'reason' => isset($field['message']) ? $field['message'] : 'Invalid'
-                );
+        // Strategy 1: Use WPCF7_Submission (most reliable — has actual field names)
+        if (class_exists('WPCF7_Submission')) {
+            $submission = WPCF7_Submission::get_instance();
+            if ($submission && method_exists($submission, 'get_invalid_fields')) {
+                $invalid = $submission->get_invalid_fields();
+                foreach ($invalid as $field_name => $field_data) {
+                    $invalid_fields[] = array(
+                        'field' => $field_name,
+                        'reason' => isset($field_data['reason']) ? $field_data['reason'] : 'Invalid',
+                    );
+                }
             }
         }
 
-        // Also try to get from contact form object
-        if (method_exists($contact_form, 'get_invalid_fields')) {
-            $invalid = $contact_form->get_invalid_fields();
-            foreach ($invalid as $field_name => $field_data) {
+        // Strategy 2: Fall back to result['invalid_fields'] if Strategy 1 found nothing.
+        // CF7 stores the field reference as a CSS selector like:
+        //   "span.wpcf7-form-control-wrap.your-name"
+        // We extract the last segment after the final '.' as the field name.
+        if (empty($invalid_fields) && $result && isset($result['invalid_fields'])) {
+            foreach ($result['invalid_fields'] as $field) {
+                $into = isset($field['into']) ? $field['into'] : '';
+                // Extract field name from CSS selector (last class = field name)
+                if ($into && preg_match('/\.([^.]+)$/', $into, $m)) {
+                    $field_name = $m[1];
+                } else {
+                    $field_name = $into ?: 'unknown';
+                }
+
                 $invalid_fields[] = array(
                     'field' => $field_name,
-                    'reason' => isset($field_data['reason']) ? $field_data['reason'] : 'Invalid'
+                    'reason' => isset($field['message']) ? $field['message'] : 'Invalid',
                 );
             }
         }
@@ -192,7 +206,7 @@ class Form_Settings_Error_Logger
         return array(
             'invalid_fields' => $invalid_fields,
             'submission_data' => $this->get_submission_data(),
-            'result_status' => $result ? $result['status'] : 'unknown'
+            'result_status' => $result ? $result['status'] : 'unknown',
         );
     }
 
