@@ -12,6 +12,7 @@ function form_settings_enqueue_frontend_scripts()
 {
     $options = get_option('form_settings_options', array());
     $disable_copy_paste = isset($options['disable_copy_paste']) && $options['disable_copy_paste'];
+    $validation_error_style = isset($options['validation_error_style']) ? $options['validation_error_style'] : 'tooltip';
 
     // Build validation rules for JS — required + min/max length
     $rules = get_option('form_settings_validation_rules', array());
@@ -39,37 +40,67 @@ function form_settings_enqueue_frontend_scripts()
         return;
     }
 
+    // Add inline CSS for the "inline" error style
+    if (!empty($js_rules) && $validation_error_style === 'inline') {
+        wp_add_inline_style('contact-form-7', '
+            span.wpcf7-form-control-wrap {
+                position: relative;
+                display: block;
+            }
+            span.fs-inline-error {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                background: #b30000;
+                color: #fff;
+                padding: 2px 6px;
+                font-size: 11px;
+                margin-top: 2px;
+                border-radius: 2px;
+                line-height: 1.2;
+                white-space: nowrap;
+                z-index: 10;
+            }
+        ');
+    }
+
     // Pass rules to JS
     wp_localize_script('jquery', 'formSettingsValidation', array(
         'rules' => $js_rules,
+        'style' => $validation_error_style,
     ));
 
     $inline_js = "jQuery(document).ready(function($) {\n";
 
-    // ── Required / length validation: disable submit + tooltip ────────────────
+    // ── Required / length validation: disable submit + show errors ────────────────
     if (!empty($js_rules)) {
         $inline_js .= "
         var fsRules = formSettingsValidation.rules; // [{name, label, required, min_length, max_length}]
+        var fsStyle = formSettingsValidation.style; // 'tooltip' or 'inline'
 
-        // ── Tooltip element (shared, appended once) ───────────────────────────
-        var \$fsTooltip = $('<div id=\"fs-required-tooltip\"></div>').css({
-            position: 'absolute',
-            background: '#333',
-            color: '#fff',
-            padding: '8px 12px',
-            borderRadius: '4px',
-            fontSize: '13px',
-            lineHeight: '1.5',
-            zIndex: 99999,
-            pointerEvents: 'none',
-            maxWidth: '280px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-            display: 'none'
-        }).appendTo('body');
+        // ── Tooltip element (only used if style === 'tooltip') ───────────────────
+        var \$fsTooltip = null;
+        if (fsStyle === 'tooltip') {
+            \$fsTooltip = $('<div id=\"fs-required-tooltip\"></div>').css({
+                position: 'absolute',
+                background: '#333',
+                color: '#fff',
+                padding: '8px 12px',
+                borderRadius: '4px',
+                fontSize: '13px',
+                lineHeight: '1.5',
+                zIndex: 99999,
+                pointerEvents: 'none',
+                maxWidth: '280px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                display: 'none'
+            }).appendTo('body');
+        }
 
         // ── Per-form setup ────────────────────────────────────────────────────
         function fsSetupForm(\$form) {
             var \$submit = \$form.find('input[type=\"submit\"], button[type=\"submit\"]');
+            var touchedFields = {}; // tracks fields user has interacted with
 
             // Only include rules for fields that actually exist in this form
             var formRules = [];
@@ -80,7 +111,7 @@ function form_settings_enqueue_frontend_scripts()
             }
             if (formRules.length === 0) return;
 
-            // Returns an array of error message strings, one per problem found
+            // Returns an array of error objects: { rule, field_name, message }
             function getErrors() {
                 var errors = [];
                 for (var i = 0; i < formRules.length; i++) {
@@ -90,31 +121,58 @@ function form_settings_enqueue_frontend_scripts()
                     var len   = val.trim().length;
 
                     if (rule.required && len === 0) {
-                        errors.push(rule.label + ' is required');
+                        errors.push({ rule: rule, field_name: rule.name, message: rule.label + ' is required' });
                         continue; // skip length checks if empty and required
                     }
 
                     if (len > 0 && rule.min_length !== null && len < rule.min_length) {
-                        errors.push(rule.label + ' must be at least ' + rule.min_length + ' characters (currently ' + len + ')');
+                        errors.push({ rule: rule, field_name: rule.name, message: rule.label + ' must be at least ' + rule.min_length + ' characters' });
                     }
 
                     if (len > 0 && rule.max_length !== null && len > rule.max_length) {
-                        errors.push(rule.label + ' must not exceed ' + rule.max_length + ' characters (currently ' + len + ')');
+                        errors.push({ rule: rule, field_name: rule.name, message: rule.label + ' must not exceed ' + rule.max_length + ' characters' });
                     }
                 }
                 return errors;
             }
 
             function checkForm() {
-                var hasErrors = getErrors().length > 0;
-                \$submit.prop('disabled', hasErrors);
-                if (hasErrors) {
+                var errors = getErrors();
+                \$submit.prop('disabled', errors.length > 0);
+                
+                if (errors.length > 0) {
                     \$wrapper.css('cursor', 'not-allowed');
                     \$submit.css('pointerEvents', 'none');
                 } else {
                     \$wrapper.css('cursor', '');
                     \$submit.css('pointerEvents', '');
-                    \$fsTooltip.hide();
+                    if (\$fsTooltip) \$fsTooltip.hide();
+                }
+
+                // If inline style is used, show errors under touched fields
+                if (fsStyle === 'inline') {
+                    // Remove all existing inline errors first
+                    \$form.find('.fs-inline-error').remove();
+                    
+                    // Add back errors for touched fields
+                    for (var i = 0; i < errors.length; i++) {
+                        var err = errors[i];
+                        if (touchedFields[err.field_name]) {
+                            // Find the field robustly, regardless of theme or structure
+                            var \$field = \$form.find('[name=\"' + err.field_name + '\"]');
+                            if (\$field.length === 0) continue; // safety check
+                            
+                            // Find the CF7 wrapper, or if missing (custom theme), use the field itself
+                            var \$wrap = \$field.closest('.wpcf7-form-control-wrap');
+                            if (\$wrap.length > 0) {
+                                // Append to the wrapper so it stays grouped inside
+                                \$wrap.append('<span class=\"fs-inline-error\">' + err.message + '</span>');
+                            } else {
+                                // Fallback: put it directly after the field
+                                \$field.last().after('<span class=\"fs-inline-error\">' + err.message + '</span>');
+                            }
+                        }
+                    }
                 }
             }
 
@@ -127,40 +185,64 @@ function form_settings_enqueue_frontend_scripts()
             \$wrapper.css('cursor', 'not-allowed');
             \$submit.css('pointerEvents', 'none');
 
-            // Re-check on every keystroke / change
-            \$form.on('input change', function() { checkForm(); });
+            // Listen to field interactions to mark them as touched
+            \$form.on('blur input change', '.wpcf7-form-control', function() {
+                var name = \$(this).attr('name');
+                if (name) {
+                    touchedFields[name] = true;
+                }
+                checkForm();
+            });
 
-            // Tooltip: hover on the WRAPPER (fires even when button is disabled)
+            // Initial check just sets the button state without marking fields touched
+            checkForm();
+
+            // Tooltip / Inline triggers on hovering the disabled submit button wrapper
             \$wrapper.on('mouseenter', function() {
                 if (!\$submit.prop('disabled')) return;
                 var errors = getErrors();
                 if (errors.length === 0) return;
 
-                var msg = '';
-                for (var i = 0; i < errors.length; i++) {
-                    msg += '&bull; ' + errors[i] + '<br>';
-                }
+                if (fsStyle === 'tooltip') {
+                    var msg = '';
+                    for (var i = 0; i < errors.length; i++) {
+                        msg += '&bull; ' + errors[i].message + '<br>';
+                    }
 
-                \$fsTooltip.html(msg);
-                var btnOffset = \$wrapper.offset();
-                \$fsTooltip.css({
-                    top: (btnOffset.top - \$fsTooltip.outerHeight(true) - 10) + 'px',
-                    left: btnOffset.left + 'px'
-                }).fadeIn(150);
+                    \$fsTooltip.html(msg);
+                    var btnOffset = \$wrapper.offset();
+                    \$fsTooltip.css({
+                        top: (btnOffset.top - \$fsTooltip.outerHeight(true) - 10) + 'px',
+                        left: btnOffset.left + 'px'
+                    }).fadeIn(150);
+                } else if (fsStyle === 'inline') {
+                    // Hovering the disabled button marks ALL required fields as touched 
+                    // so the user immediately sees all inline red error boxes.
+                    for (var j = 0; j < formRules.length; j++) {
+                        touchedFields[formRules[j].name] = true;
+                    }
+                    checkForm();
+                }
             });
 
             \$wrapper.on('mouseleave', function() {
-                \$fsTooltip.fadeOut(200);
+                if (fsStyle === 'tooltip' && \$fsTooltip) {
+                    \$fsTooltip.fadeOut(200);
+                }
             });
         }
 
         // Init all forms on load
         \$('.wpcf7-form').each(function() { fsSetupForm(\$(this)); });
 
-        // Re-disable after CF7 resets the form (successful submission)
+        // Reset after successful CF7 submission
         \$(document).on('wpcf7reset', function(e) {
             var \$form = \$(e.target).find('.wpcf7-form');
+            \$form.find('.fs-inline-error').remove();
             \$form.find('input[type=\"submit\"], button[type=\"submit\"]').prop('disabled', true);
+            // We cannot clear the touchedFields object directly here without re-initializing, 
+            // but CF7 re-triggers 'change' empty, we can just rely on the form re-init or 
+            // accept that they are still \"touched\" but empty (which is fine after reset)
         });
 ";
     }

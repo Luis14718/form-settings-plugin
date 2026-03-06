@@ -484,6 +484,36 @@
             });
         });
 
+        // ==================== General Settings Tab ====================
+
+        // Save general settings
+        $('#fs-settings-form').on('submit', function (e) {
+            e.preventDefault();
+
+            const $btn = $(this).find('button[type=\"submit\"]');
+            const originalText = $btn.text();
+            $btn.prop('disabled', true).text('Saving...');
+
+            $.ajax({
+                url: formSettingsAjax.ajax_url,
+                type: 'POST',
+                data: $(this).serialize() + '&action=fs_save_settings',
+                success: function (response) {
+                    if (response.success) {
+                        showMessage('#fs-settings-message', response.data.message, 'success');
+                    } else {
+                        showMessage('#fs-settings-message', response.data.message, 'error');
+                    }
+                },
+                error: function () {
+                    showMessage('#fs-settings-message', 'An error occurred. Please try again.', 'error');
+                },
+                complete: function () {
+                    $btn.prop('disabled', false).text(originalText);
+                }
+            });
+        });
+
     });
 
 })(jQuery);

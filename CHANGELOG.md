@@ -5,6 +5,20 @@ All notable changes to the Form Settings plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-03-06
+
+### Added
+- **Validation Error Style** setting added to General Settings tab
+- Option to toggle between "Tooltip on Submit Button" and "Inline Under Each Field"
+- Added inline error CSS support to inject styling globally
+- Form fields dynamically receive red error boxes below them on blur/change with the Inline style
+
+### Fixed
+- General Settings save button was reloading the page instead of saving via AJAX
+- Fixed AJAX `check_ajax_referer` nonce mismatch that caused 403 errors when saving General Settings
+- Disabled buttons trap `mouseenter` events; fixed by wrapping submit button in a span
+- CF7 wrapper classes vary by theme; script now targets fields robustly via DOM `name` attributes instead of exact wrapper class matches
+
 ## [1.0.3] - 2026-02-23
 
 ### Added
