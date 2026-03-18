@@ -13,6 +13,7 @@ function form_settings_enqueue_frontend_scripts()
     $options = get_option('form_settings_options', array());
     $disable_copy_paste = isset($options['disable_copy_paste']) && $options['disable_copy_paste'];
     $validation_error_style = isset($options['validation_error_style']) ? $options['validation_error_style'] : 'tooltip';
+    $disable_submit_on_loading = isset($options['disable_submit_on_loading']) && $options['disable_submit_on_loading'];
 
     // Build validation rules for JS — required + min/max length
     $rules = get_option('form_settings_validation_rules', array());
@@ -36,7 +37,7 @@ function form_settings_enqueue_frontend_scripts()
     }
 
     // Only enqueue if there's something to do
-    if (!$disable_copy_paste && empty($js_rules)) {
+    if (!$disable_copy_paste && empty($js_rules) && !$disable_submit_on_loading) {
         return;
     }
 
@@ -64,10 +65,11 @@ function form_settings_enqueue_frontend_scripts()
         ');
     }
 
-    // Pass rules to JS
+    // Pass rules and options to JS
     wp_localize_script('jquery', 'formSettingsValidation', array(
-        'rules' => $js_rules,
-        'style' => $validation_error_style,
+        'rules'                   => $js_rules,
+        'style'                   => $validation_error_style,
+        'disable_submit_loading'  => $disable_submit_on_loading ? '1' : '0',
     ));
 
     $inline_js = "jQuery(document).ready(function($) {\n";
@@ -244,6 +246,48 @@ function form_settings_enqueue_frontend_scripts()
             // but CF7 re-triggers 'change' empty, we can just rely on the form re-init or 
             // accept that they are still \"touched\" but empty (which is fine after reset)
         });
+";
+    }
+
+    // ── Disable submit button while CF7 is loading ─────────────────────────────
+    if ($disable_submit_on_loading) {
+        $inline_js .= "
+        (function() {
+            // Store the original button labels per form so we can restore them
+            var fsOriginalLabels = {};
+
+            // Before CF7 sends: lock the button
+            $(document).on('wpcf7beforesubmit', '.wpcf7', function(e) {
+                var \$form   = $(this);
+                var formKey = \$form.attr('id') || \$form.index();
+                var \$btn    = \$form.find('input[type=\"submit\"], button[type=\"submit\"]');
+
+                // Save the original label (value for <input>, text for <button>)
+                if (\$btn.is('input')) {
+                    fsOriginalLabels[formKey] = \$btn.val();
+                    \$btn.val('Sending\u2026');
+                } else {
+                    fsOriginalLabels[formKey] = \$btn.text();
+                    \$btn.text('Sending\u2026');
+                }
+                \$btn.prop('disabled', true);
+            });
+
+            // CF7 server-side validation failed: restore so user can resubmit
+            $(document).on('wpcf7invalid', '.wpcf7', function(e) {
+                var \$form   = $(this);
+                var formKey = \$form.attr('id') || \$form.index();
+                var \$btn    = \$form.find('input[type=\"submit\"], button[type=\"submit\"]');
+                var orig    = fsOriginalLabels[formKey];
+
+                if (\$btn.is('input')) {
+                    \$btn.val(orig || 'Submit');
+                } else {
+                    \$btn.text(orig || 'Submit');
+                }
+                \$btn.prop('disabled', false);
+            });
+        })();
 ";
     }
 

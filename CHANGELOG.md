@@ -5,6 +5,13 @@ All notable changes to the Form Settings plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2026-03-18
+
+### Added
+- **Disable Submit Button While Loading** setting in the General Settings tab
+- When enabled, the submit button is disabled and shows "Sending…" immediately after the user clicks it, preventing duplicate submissions
+- Button is automatically re-enabled if CF7 returns a server-side validation error, allowing the user to correct and resubmit
+
 ## [1.0.4] - 2026-03-06
 
 ### Added

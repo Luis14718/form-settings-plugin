@@ -335,6 +335,7 @@ class Form_Settings_Admin
         $options = get_option('form_settings_options', array());
         $disable_copy_paste = isset($options['disable_copy_paste']) ? $options['disable_copy_paste'] : false;
         $validation_error_style = isset($options['validation_error_style']) ? $options['validation_error_style'] : 'tooltip';
+        $disable_submit_on_loading = isset($options['disable_submit_on_loading']) ? $options['disable_submit_on_loading'] : false;
         ?>
         <div class="fs-tab-content">
             <h2>
@@ -383,6 +384,22 @@ class Form_Settings_Admin
                             </select>
                             <p class="description">
                                 <?php _e('Choose how to display missing required fields and validation errors when the submit button is disabled.', 'form-settings'); ?>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="fs-disable-submit-loading">
+                                <?php _e('Disable Submit Button While Loading', 'form-settings'); ?>
+                            </label>
+                        </th>
+                        <td>
+                            <label class="fs-toggle">
+                                <input type="checkbox" id="fs-disable-submit-loading" name="disable_submit_on_loading" value="1" <?php checked($disable_submit_on_loading, true); ?> />
+                                <span class="fs-toggle-slider"></span>
+                            </label>
+                            <p class="description">
+                                <?php _e('When enabled, the submit button is disabled and shows "Sending&hellip;" while the form is being processed. It re-enables automatically if validation fails, so the user can correct and resubmit.', 'form-settings'); ?>
                             </p>
                         </td>
                     </tr>
@@ -566,6 +583,7 @@ class Form_Settings_Admin
         $options = get_option('form_settings_options', array());
         $options['disable_copy_paste'] = isset($_POST['disable_copy_paste']) && $_POST['disable_copy_paste'] === '1';
         $options['validation_error_style'] = isset($_POST['validation_error_style']) ? sanitize_text_field($_POST['validation_error_style']) : 'tooltip';
+        $options['disable_submit_on_loading'] = isset($_POST['disable_submit_on_loading']) && $_POST['disable_submit_on_loading'] === '1';
 
         update_option('form_settings_options', $options);
 
