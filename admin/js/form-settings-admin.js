@@ -227,6 +227,7 @@
                         // Build validation form
                         let html = '<form id="fs-validation-form"><table class="wp-list-table widefat fixed striped"><thead><tr>';
                         html += '<th>Field Name</th><th>Type</th><th>Display Name</th><th>Required</th><th>Min Length</th><th>Max Length</th>';
+                        html += '<th>No Extra Spaces (A)</th><th>Valid URL (B)</th><th>Numeric Only (C)</th><th>Valid Date (D)</th>';
                         html += '</tr></thead><tbody>';
 
                         fields.forEach(function (field) {
@@ -235,6 +236,10 @@
                             const isRequired = existingRule.required || false;
                             const minLength = existingRule.min_length || '';
                             const maxLength = existingRule.max_length || '';
+                            const noExtraSpaces = existingRule.no_extra_spaces || false;
+                            const urlFormat = existingRule.url_format || false;
+                            const numericOnly = existingRule.numeric_only || false;
+                            const dateFormat = existingRule.date_format || false;
 
                             html += '<tr>';
                             html += '<td><strong>' + field.name + '</strong></td>';
@@ -245,6 +250,10 @@
                             html += '<span class="fs-toggle-slider"></span></label></td>';
                             html += '<td><input type="number" name="rules[' + field.name + '][min_length]" value="' + minLength + '" min="0" class="small-text" /></td>';
                             html += '<td><input type="number" name="rules[' + field.name + '][max_length]" value="' + maxLength + '" min="0" class="small-text" /></td>';
+                            html += '<td><label class="fs-toggle"><input type="checkbox" name="rules[' + field.name + '][no_extra_spaces]" value="1"' + (noExtraSpaces ? ' checked' : '') + ' /><span class="fs-toggle-slider"></span></label></td>';
+                            html += '<td><label class="fs-toggle"><input type="checkbox" name="rules[' + field.name + '][url_format]" value="1"' + (urlFormat ? ' checked' : '') + ' /><span class="fs-toggle-slider"></span></label></td>';
+                            html += '<td><label class="fs-toggle"><input type="checkbox" name="rules[' + field.name + '][numeric_only]" value="1"' + (numericOnly ? ' checked' : '') + ' /><span class="fs-toggle-slider"></span></label></td>';
+                            html += '<td><label class="fs-toggle"><input type="checkbox" name="rules[' + field.name + '][date_format]" value="1"' + (dateFormat ? ' checked' : '') + ' /><span class="fs-toggle-slider"></span></label></td>';
                             html += '</tr>';
                         });
 

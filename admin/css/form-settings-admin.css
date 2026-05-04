@@ -18,6 +18,10 @@
     box-shadow: 0 1px 1px rgba(0,0,0,.04);
 }
 
+.widefat .regular-text {
+    width: 100%;
+}
+
 .fs-tab-content h2 {
     margin-top: 0;
 }

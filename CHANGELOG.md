@@ -12,6 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When enabled, the submit button is disabled and shows "Sending…" immediately after the user clicks it, preventing duplicate submissions
 - Button is automatically re-enabled if CF7 returns a server-side validation error, allowing the user to correct and resubmit
 
+## [2.0] - 2026-04-30
+
+### Added
+- Stricter email validation (no spaces, no leading/trailing/consecutive dots, domain sanity)
+- Stricter phone validation (optional leading `+`, digits and hyphens only; rejects letters/invalid formats; min/max count digits)
+- Stricter name validation (letters + optional hyphens, single spaces only)
+- Per-field validation toggles:
+  - A: No extra spaces (no leading/trailing spaces, no multiple spaces)
+  - B: Valid URL (http/https)
+  - C: Numeric only (digits)
+  - D: Valid date (YYYY-MM-DD)
+
 ## [1.0.4] - 2026-03-06
 
 ### Added
