@@ -22,7 +22,11 @@ function form_settings_enqueue_frontend_scripts()
         foreach ($rules as $field_name => $rule) {
             $has_rule = !empty($rule['required'])
                 || (!empty($rule['min_length']) && $rule['min_length'] > 0)
-                || (!empty($rule['max_length']) && $rule['max_length'] > 0);
+                || (!empty($rule['max_length']) && $rule['max_length'] > 0)
+                || !empty($rule['no_extra_spaces'])
+                || !empty($rule['url_format'])
+                || !empty($rule['numeric_only'])
+                || !empty($rule['date_format']);
 
             if ($has_rule) {
                 $js_rules[] = array(
@@ -31,6 +35,10 @@ function form_settings_enqueue_frontend_scripts()
                     'required' => !empty($rule['required']),
                     'min_length' => isset($rule['min_length']) && $rule['min_length'] > 0 ? (int) $rule['min_length'] : null,
                     'max_length' => isset($rule['max_length']) && $rule['max_length'] > 0 ? (int) $rule['max_length'] : null,
+                    'no_extra_spaces' => !empty($rule['no_extra_spaces']),
+                    'url_format' => !empty($rule['url_format']),
+                    'numeric_only' => !empty($rule['numeric_only']),
+                    'date_format' => !empty($rule['date_format']),
                 );
             }
         }
@@ -120,11 +128,82 @@ function form_settings_enqueue_frontend_scripts()
                     var rule  = formRules[i];
                     var \$field = \$form.find('[name=\"' + rule.name + '\"]');
                     var val   = \$field.val() || '';
-                    var len   = val.trim().length;
+                    var trimmedVal = val.trim();
+                    // For phone/tel fields we treat min/max length as digit count.
+                    // (consistent with the server-side validation).
+                    var len   = trimmedVal.length;
+                    var inputType = (\$field.attr('type') || '').toLowerCase();
+                    if (inputType === 'tel' || /phone|tel/i.test(rule.name)) {
+                        // Reject any alphabetic chars (and other invalid formats) up-front.
+                        // Allowed: optional leading '+', digits, and hyphen separators.
+                        var raw = val.trim();
+                        var phoneOk = /^\+?\d+(?:-\d+)*$/.test(raw);
+                        if (!phoneOk) {
+                            errors.push({ rule: rule, field_name: rule.name, message: rule.label + ' must be a valid phone number' });
+                            continue;
+                        }
+                        len = (raw.match(/\d/g) || []).length;
+                    }
 
                     if (rule.required && len === 0) {
                         errors.push({ rule: rule, field_name: rule.name, message: rule.label + ' is required' });
                         continue; // skip length checks if empty and required
+                    }
+
+                    // A/B/C/D format validations (only when there's some input).
+                    if (len > 0) {
+                        if (rule.no_extra_spaces) {
+                            // Reject leading/trailing spaces, tabs/newlines, and multiple consecutive spaces.
+                            if (val !== trimmedVal || / {2,}/.test(val) || /[\\t\\r\\n\\v\\f]/u.test(val)) {
+                                errors.push({ rule: rule, field_name: rule.name, message: rule.label + ' must not contain leading/trailing spaces or multiple consecutive spaces' });
+                                continue;
+                            }
+                        }
+
+                        if (rule.url_format) {
+                            // Reject any whitespace and enforce http(s) URL format.
+                            if (val !== trimmedVal || /\s/u.test(val)) {
+                                errors.push({ rule: rule, field_name: rule.name, message: rule.label + ' must be a valid URL' });
+                                continue;
+                            }
+                            var isUrl = false;
+                            try {
+                                if (typeof URL !== 'undefined') {
+                                    var u = new URL(trimmedVal);
+                                    isUrl = (u.hostname && (u.protocol === 'http:' || u.protocol === 'https:'));
+                                }
+                            } catch (e) {
+                                isUrl = false;
+                            }
+                            if (!isUrl) {
+                                errors.push({ rule: rule, field_name: rule.name, message: rule.label + ' must be a valid URL' });
+                                continue;
+                            }
+                        }
+
+                        if (rule.numeric_only) {
+                            if (val !== trimmedVal || !/^\d+$/.test(trimmedVal)) {
+                                errors.push({ rule: rule, field_name: rule.name, message: rule.label + ' must contain digits only' });
+                                continue;
+                            }
+                        }
+
+                        if (rule.date_format) {
+                            if (val !== trimmedVal || !/^\d{4}-\d{2}-\d{2}$/.test(trimmedVal)) {
+                                errors.push({ rule: rule, field_name: rule.name, message: rule.label + ' must be a valid date (YYYY-MM-DD)' });
+                                continue;
+                            }
+                            var parts = trimmedVal.split('-');
+                            var y = parseInt(parts[0], 10);
+                            var m = parseInt(parts[1], 10);
+                            var d = parseInt(parts[2], 10);
+                            var dt = new Date(Date.UTC(y, m - 1, d));
+                            var isValidDate = (dt.getUTCFullYear() === y && (dt.getUTCMonth() === m - 1) && dt.getUTCDate() === d);
+                            if (!isValidDate) {
+                                errors.push({ rule: rule, field_name: rule.name, message: rule.label + ' must be a valid date (YYYY-MM-DD)' });
+                                continue;
+                            }
+                        }
                     }
 
                     if (len > 0 && rule.min_length !== null && len < rule.min_length) {

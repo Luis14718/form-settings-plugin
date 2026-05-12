@@ -65,18 +65,29 @@ class Form_Settings_Admin
             return;
         }
 
+        $admin_css_ver = FORM_SETTINGS_VERSION;
+        $admin_js_ver  = FORM_SETTINGS_VERSION;
+        $css_path = FORM_SETTINGS_PLUGIN_DIR . 'admin/css/form-settings-admin.css';
+        $js_path  = FORM_SETTINGS_PLUGIN_DIR . 'admin/js/form-settings-admin.js';
+        if (file_exists($css_path)) {
+            $admin_css_ver = FORM_SETTINGS_VERSION . '.' . filemtime($css_path);
+        }
+        if (file_exists($js_path)) {
+            $admin_js_ver = FORM_SETTINGS_VERSION . '.' . filemtime($js_path);
+        }
+
         wp_enqueue_style(
             'form-settings-admin',
             FORM_SETTINGS_PLUGIN_URL . 'admin/css/form-settings-admin.css',
             array(),
-            FORM_SETTINGS_VERSION
+            $admin_css_ver
         );
 
         wp_enqueue_script(
             'form-settings-admin',
             FORM_SETTINGS_PLUGIN_URL . 'admin/js/form-settings-admin.js',
             array('jquery'),
-            FORM_SETTINGS_VERSION,
+            $admin_js_ver,
             true
         );
 
@@ -250,6 +261,10 @@ class Form_Settings_Admin
                                         <th><?php _e('Required', 'form-settings'); ?></th>
                                         <th><?php _e('Min Length', 'form-settings'); ?></th>
                                         <th><?php _e('Max Length', 'form-settings'); ?></th>
+                                        <th><?php _e('No Extra Spaces (A)', 'form-settings'); ?></th>
+                                        <th><?php _e('Valid URL (B)', 'form-settings'); ?></th>
+                                        <th><?php _e('Numeric Only (C)', 'form-settings'); ?></th>
+                                        <th><?php _e('Valid Date (D)', 'form-settings'); ?></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -277,6 +292,34 @@ class Form_Settings_Admin
                                                 <input type="number" name="rules[<?php echo esc_attr($field_name); ?>][max_length]"
                                                     value="<?php echo isset($rule['max_length']) ? esc_attr($rule['max_length']) : ''; ?>"
                                                     min="0" class="small-text" />
+                                            </td>
+                                            <td>
+                                                <label class="fs-toggle">
+                                                    <input type="checkbox" name="rules[<?php echo esc_attr($field_name); ?>][no_extra_spaces]"
+                                                        value="1" <?php checked(isset($rule['no_extra_spaces']) && $rule['no_extra_spaces']); ?> />
+                                                    <span class="fs-toggle-slider"></span>
+                                                </label>
+                                            </td>
+                                            <td>
+                                                <label class="fs-toggle">
+                                                    <input type="checkbox" name="rules[<?php echo esc_attr($field_name); ?>][url_format]"
+                                                        value="1" <?php checked(isset($rule['url_format']) && $rule['url_format']); ?> />
+                                                    <span class="fs-toggle-slider"></span>
+                                                </label>
+                                            </td>
+                                            <td>
+                                                <label class="fs-toggle">
+                                                    <input type="checkbox" name="rules[<?php echo esc_attr($field_name); ?>][numeric_only]"
+                                                        value="1" <?php checked(isset($rule['numeric_only']) && $rule['numeric_only']); ?> />
+                                                    <span class="fs-toggle-slider"></span>
+                                                </label>
+                                            </td>
+                                            <td>
+                                                <label class="fs-toggle">
+                                                    <input type="checkbox" name="rules[<?php echo esc_attr($field_name); ?>][date_format]"
+                                                        value="1" <?php checked(isset($rule['date_format']) && $rule['date_format']); ?> />
+                                                    <span class="fs-toggle-slider"></span>
+                                                </label>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -510,6 +553,10 @@ class Form_Settings_Admin
                 'display_name' => isset($rule['display_name']) ? sanitize_text_field($rule['display_name']) : '',
                 'min_length' => isset($rule['min_length']) && !empty($rule['min_length']) ? absint($rule['min_length']) : null,
                 'max_length' => isset($rule['max_length']) && !empty($rule['max_length']) ? absint($rule['max_length']) : null,
+                'no_extra_spaces' => isset($rule['no_extra_spaces']) && $rule['no_extra_spaces'] === '1',
+                'url_format' => isset($rule['url_format']) && $rule['url_format'] === '1',
+                'numeric_only' => isset($rule['numeric_only']) && $rule['numeric_only'] === '1',
+                'date_format' => isset($rule['date_format']) && $rule['date_format'] === '1',
             );
         }
 
