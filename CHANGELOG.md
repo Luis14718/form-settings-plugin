@@ -5,6 +5,11 @@ All notable changes to the Form Settings plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-09-18
+
+### Fixed
+- **Disable Submit Button While Loading** and required-field validation now work with themes whose CF7 submit control is a `<button class="wpcf7-submit">` without an explicit `type="submit"` attribute. The submit-button selector now also matches CF7's canonical `.wpcf7-submit` class, so the button correctly disables and shows "Sending…" during submission (and re-enables on server-side validation errors).
+
 ## [1.0.5] - 2026-03-18
 
 ### Added

@@ -109,7 +109,7 @@ function form_settings_enqueue_frontend_scripts()
 
         // ── Per-form setup ────────────────────────────────────────────────────
         function fsSetupForm(\$form) {
-            var \$submit = \$form.find('input[type=\"submit\"], button[type=\"submit\"]');
+            var \$submit = \$form.find('input[type=\"submit\"], button[type=\"submit\"], .wpcf7-submit');
             var touchedFields = {}; // tracks fields user has interacted with
 
             // Only include rules for fields that actually exist in this form
@@ -320,7 +320,7 @@ function form_settings_enqueue_frontend_scripts()
         \$(document).on('wpcf7reset', function(e) {
             var \$form = \$(e.target).find('.wpcf7-form');
             \$form.find('.fs-inline-error').remove();
-            \$form.find('input[type=\"submit\"], button[type=\"submit\"]').prop('disabled', true);
+            \$form.find('input[type=\"submit\"], button[type=\"submit\"], .wpcf7-submit').prop('disabled', true);
             // We cannot clear the touchedFields object directly here without re-initializing, 
             // but CF7 re-triggers 'change' empty, we can just rely on the form re-init or 
             // accept that they are still \"touched\" but empty (which is fine after reset)
@@ -339,7 +339,7 @@ function form_settings_enqueue_frontend_scripts()
             $(document).on('wpcf7beforesubmit', '.wpcf7', function(e) {
                 var \$form   = $(this);
                 var formKey = \$form.attr('id') || \$form.index();
-                var \$btn    = \$form.find('input[type=\"submit\"], button[type=\"submit\"]');
+                var \$btn    = \$form.find('input[type=\"submit\"], button[type=\"submit\"], .wpcf7-submit');
 
                 // Save the original label (value for <input>, text for <button>)
                 if (\$btn.is('input')) {
@@ -356,7 +356,7 @@ function form_settings_enqueue_frontend_scripts()
             $(document).on('wpcf7invalid', '.wpcf7', function(e) {
                 var \$form   = $(this);
                 var formKey = \$form.attr('id') || \$form.index();
-                var \$btn    = \$form.find('input[type=\"submit\"], button[type=\"submit\"]');
+                var \$btn    = \$form.find('input[type=\"submit\"], button[type=\"submit\"], .wpcf7-submit');
                 var orig    = fsOriginalLabels[formKey];
 
                 if (\$btn.is('input')) {
